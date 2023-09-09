@@ -1,0 +1,143 @@
+# NMAP discovery
+
+nmap 192.168.33.10
+Starting Nmap 7.80 ( https://nmap.org ) at 2023-09-06 23:39 EEST
+Nmap scan report for 192.168.33.10
+Host is up (0.0047s latency).
+Not shown: 997 filtered ports
+PORT   STATE  SERVICE
+20/tcp closed ftp-data
+21/tcp open   ftp
+80/tcp open   http
+
+
+OR
+
+nmap -sV 192.168.33.10
+Starting Nmap 7.80 ( https://nmap.org ) at 2023-09-06 23:42 EEST
+Nmap scan report for 192.168.33.10
+Host is up (0.0011s latency).
+Not shown: 996 filtered ports
+PORT   STATE  SERVICE  VERSION
+20/tcp closed ftp-data
+21/tcp open   ftp      vsftpd 2.0.8 or later
+22/tcp open   ssh      OpenSSH 8.2p1 Ubuntu 4ubuntu0.9 (Ubuntu Linux; protocol 2.0)
+80/tcp open   http     Apache httpd 2.4.41 ((Ubuntu))
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+
+# FTP discovery
+
+ftp 192.168.33.10
+Connected to 192.168.33.10.
+220 "I am the Prince of Wales, my person is sacred. Follow the rules and do not touch anything here! You shall be punished for your disobedience!"
+Name (192.168.33.10:root): anonymous
+331 Please specify the password.
+Password:
+230 Login successful.
+Remote system type is UNIX.
+Using binary mode to transfer files.
+ftp>ls
+200 PORT command successful. Consider using PASV.
+150 Here comes the directory listing.
+tellnoone.txt
+226 Directory send OK.
+ftp: 28 bytes received in 0.00Seconds 28.00Kbytes/sec.
+ftp> get tellnoone.txt
+200 PORT command successful. Consider using PASV.
+150 Opening BINARY mode data connection for tellnoone.txt (141 bytes).
+226 Transfer complete.
+ftp: 141 bytes received in 0.00Seconds 141000.00Kbytes/sec.
+ftp> bye
+221 Goodbye.
+
+# BASE64 decode
+
+Opening the file obtained from the FTP server, user is prompted with:
+
+RGlnIGhlcmUgZXZlcnkgc2V2ZW50aCBkYXksIGFuZCB0aG91IHNoYWx0IGZpbmQgYWx3YXlzIHRoZSBzYW1lIHRyZWFzdXJlLCBUSE17dHdlbHZlIGJyaWdodCBuZXcgcGVubmllc30=
+
+After decoding, the result is:
+
+Dig here every seventh day, and thou shalt find always the same treasure, THM{twelve bright new pennies}
+
+# Gobuster
+
+gobuster -u 192.168.33.10 -w directory-list-1.0.txt
+
+=====================================================
+Gobuster v2.0.1              OJ Reeves (@TheColonial)
+=====================================================
+[+] Mode         : dir
+[+] Url/Domain   : http://192.168.33.10/
+[+] Threads      : 10
+[+] Wordlist     : directory-list-1.0.txt
+[+] Status codes : 200,204,301,302,307,403
+[+] Timeout      : 10s
+=====================================================
+2023/09/07 01:51:32 Starting gobuster
+=====================================================
+/flags (Status: 301)
+=====================================================
+2023/09/07 01:56:35 Finished
+=====================================================
+
+
+
+# Going HTTP
+- run curl 192.168.33.10
+- connect on the 192.168.33.10
+
+1st photo:
+- scan the QR code => user is prompted with THM{DREAMS_DO_COME_TRUE} (QR code is scannable)
+
+2nd photo:
+- steghide second photo
+
+steghide extract -sf Tom.jpg
+Enter passphrase:
+wrote extracted data to "stegtext.txt".
+
+
+Another Base64-encoded data
+VEhNe0xPTkdfTElWRV9USEVfS0lOR30=
+
+Which decoded turns into:
+THM{LONG_LIVE_THE_KING}
+
+
+3rd photo:
+- use binwalk tool to extract the content
+- flag.png is the corrupted png file that contains the flag
+- although the flag is guessable, user could open the png file using an editor. Delete these 3 intruders: Tobeornottobetheflag? one dddfdfdfdfdfdfdf
+- the flag is THM{KINGS_WILL}
+
+4th photo (user has to pay attention to subtilities):
+- click on it
+- get pickled credentials (creds.txt)
+- use a python3 script to decrypt the pickled credentials => thank you https://zetcode.com/python/pickle/
+
+ALTERNATIVELY:
+- connect on the 192.168.33.10/flags
+- repeat the 2nd and the 3rd step
+
+username: Edward
+passowrd: Ish@11b3_th3K1ng
+
+What's happening button:
+
+- uploading file. User has to check the subtilities 
+- after uploading the correct format of the document, getting the cookie from Cookies translates into THM{sweet_sir}
+
+
+# Going SSH
+- use the credentials obtained after loading the creds.txt file
+- decoding morse code from user.txt. This translates into THMSWORDMULEDONKEY
+- going to /etc/passwd user is revealed with King user. Copy the content from the first ":" and on the local machine decrypt the password using john (don't forget to use a dictionary, rockyou.txt is an option). Notice that $1$ belongs to MD5 hash.
+- decrypting the root using john. The password is kingdom.
+- get the root flag (last Base64: VEhNe1lPVV9BUkVfVEhFX0tJTkd9) => THM{YOU_ARE_THE_KING}
+
+
+Addendum:
+The micro-framework used is called Flask.
+The name of the server can be found out from nmap -sV command.
