@@ -141,3 +141,5 @@ What's happening button:
 Addendum:
 The micro-framework used is called Flask.
 The name of the server can be found out from nmap -sV command.
+
+IP 192.168.33.10 was used for developing and testing in private environment.
